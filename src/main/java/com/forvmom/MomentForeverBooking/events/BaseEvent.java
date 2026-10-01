@@ -12,8 +12,7 @@ public class BaseEvent {
     private String causationId;
     private String eventType;
     public BaseEvent() {
-        // eventType must be set explicitly via setEventType() or deserialized from JSON
-        // do NOT derive from class name - breaks cross-service event routing
+        this.eventType = getClass().getSimpleName();
     }
 
     public String getEventId() {

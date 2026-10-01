@@ -46,7 +46,6 @@ public class InboundEventProcessorService {
         // ACK immediately – we'll rely on retry mechanism if processing fails
         acknowledgment.acknowledge();
 
-        
         try {
             inboundOutboxService.markAsProcessing(inboundOutbox);
             OutgoingOutboxRecord outgoingOutboxRecord =
