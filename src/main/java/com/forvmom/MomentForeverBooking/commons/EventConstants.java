@@ -1,5 +1,6 @@
 package com.forvmom.MomentForeverBooking.commons;
 
+// [test-trigger] GitOps pipeline smoke-test — 2026-10-02
 public final class EventConstants {
 
     private EventConstants() {
