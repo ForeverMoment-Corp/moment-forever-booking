@@ -1,20 +1,19 @@
 package com.forvmom.MomentForeverBooking.commons;
 
+// [test-trigger] GitOps pipeline smoke-test — 2026-10-02
 public final class EventConstants {
 
     private EventConstants() {
         // prevent instantiation
     }
 
-    //============OUTBOX STATUS===========================
-
+    // ============OUTBOX STATUS===========================
 
     public static final String PENDING = "PENDING";
     public static final String FAILED = "FAILED";
     public static final String PROCESSED = "PROCESSED";
     public static final String PROCESSING = "PROCESSING";
     public static final String DEAD = "DEAD";
-
 
     // ==========================================================
     // BOOKING EVENTS
