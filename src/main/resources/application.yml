@@ -39,10 +39,10 @@ spring:
     consul:
       host: ${CONSUL_HOST:localhost}
       port: 8500
-      enabled: ${SPRING_CLOUD_CONSUL_ENABLED:false}
+      enabled: ${SPRING_CLOUD_CONSUL_ENABLED:true}
       discovery:
-        enabled: ${CONSUL_DISCOVERY_ENABLED:false}
-        register: ${CONSUL_REGISTER:false}
+        enabled: ${CONSUL_DISCOVERY_ENABLED:true}
+        register: ${CONSUL_REGISTER:true}
         service-name: ${spring.application.name}
         health-check-path: /booking/actuator/health
         health-check-interval: 10s
