@@ -16,6 +16,7 @@ public class BookingRequestConsumer {
         this.processingService = processingService;
     }
 
+    // TO DO: test commit
     @KafkaListener(topics = "${kafka.topics.booking-requested}", groupId = "booking-group", containerFactory = "kafkaListenerContainerFactory")
     public void onBookingRequested(@Payload BookingRequestEvent event, Acknowledgment ack) {
         processingService.processEvent(event, ack);
