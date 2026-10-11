@@ -17,6 +17,7 @@ public class BookingMapper {
         booking.setUserId(event.getUserId());
         booking.setUserEmail(event.getUserEmail());
         booking.setUserFullName(event.getUserFullName());
+        booking.setUsername(event.getUsername());
         booking.setExperienceId(event.getExperienceId());
         booking.setExperienceName(event.getExperienceName());
         booking.setLocationId(event.getLocationId());

@@ -25,4 +25,25 @@ class BookingMapperTest {
 
         assertEquals(LocalDate.of(2026, 8, 22), booking.getBookingDate().toLocalDate());
     }
+
+    @Test
+    void persistsUsernameAndClientPricingLevel() {
+        BookingRequestEvent event = new BookingRequestEvent();
+        event.setBookingId("B-101");
+        event.setBookingDate(LocalDate.of(2026, 8, 22));
+        event.setUserId(7L);
+        event.setUsername("admin@example.com");
+        event.setPricingLevel("CLIENT");
+        event.setResolvedPricePerPerson(BigDecimal.TEN);
+        event.setTotalAmount(BigDecimal.TEN);
+        event.setGrandTotal(new BigDecimal("20.00"));
+
+        Booking booking = BookingMapper.fromBookingRequestEvent(event);
+
+        assertEquals("admin@example.com", booking.getUsername());
+        assertEquals(
+                com.forvmom.MomentForeverBooking.domain.enums.PricingLevel.CLIENT,
+                booking.getPricingLevel());
+        assertEquals(new BigDecimal("20.00"), booking.getGrandTotal());
+    }
 }

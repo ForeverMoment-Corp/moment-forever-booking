@@ -48,6 +48,14 @@ public class Booking {
     @Column(name = "user_full_name", length = 255)
     private String userFullName;
 
+    /**
+     * Caller username (gateway JWT subject) captured at booking time.
+     * Nullable: absent for bookings created before this field existed or via
+     * flows without the header. Present in every state (PENDING/CONFIRMED/FAILED).
+     */
+    @Column(name = "username", length = 150)
+    private String username;
+
     @Column(name = "experience_id", nullable = false)
     private Long experienceId;
 
@@ -177,6 +185,14 @@ public class Booking {
 
     public void setUserFullName(String userFullName) {
         this.userFullName = userFullName;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public Long getExperienceId() {

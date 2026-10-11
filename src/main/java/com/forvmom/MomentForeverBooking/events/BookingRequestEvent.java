@@ -12,6 +12,12 @@ public class BookingRequestEvent extends BaseEvent implements InboundEvent {
     private Long userId;
     private String userEmail;
     private String userFullName;
+    /**
+     * Caller username (gateway JWT subject) captured at booking time.
+     * {@code null} for events published before this field existed.
+     * (Consumer ignores unknown properties, so old services tolerate it.)
+     */
+    private String username;
     private Long experienceId;
     private String experienceName;
     private String experienceSlug;
@@ -67,6 +73,14 @@ public class BookingRequestEvent extends BaseEvent implements InboundEvent {
 
     public void setUserFullName(String userFullName) {
         this.userFullName = userFullName;
+    }
+
+    public String getUsername() {
+        return this.username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public Long getExperienceId() {
