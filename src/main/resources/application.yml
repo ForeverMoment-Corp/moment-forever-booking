@@ -131,8 +131,8 @@ spring:
   mail:
     host: ${SMTP_HOST:smtp-relay.brevo.com}
     port: ${SMTP_PORT:587}
-    username: ${SMTP_USERNAME:bdceb3001@smtp-brevo.com}
-    password: ${SMTP_PASSWORD:xsmtpsib-0790cac7f487e08a1df56a79ab30cf862ef5cfdc2c4bdcdd874a0d37ae109535-P2RreM8hhTDIBuzz}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
     properties:
       mail:
         smtp:
