@@ -188,7 +188,7 @@ app:
     serve-path: /uploads/**
   mail:
     # PLACEHOLDER: sender address shown to customers; needs a real, deliverable domain
-    from: ${MAIL_FROM_ADDRESS:no-reply@momentforever.example.com}
+    from: ${MAIL_FROM_ADDRESS:thegreatburp@gmail.com}
 
 slug:
   separator: "-"

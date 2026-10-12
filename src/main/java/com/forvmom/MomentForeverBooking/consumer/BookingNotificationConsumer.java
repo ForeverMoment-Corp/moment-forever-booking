@@ -57,7 +57,7 @@ public class BookingNotificationConsumer {
             log.error("Booking-confirmed notification skipped: bookingId={} not found (will retry/DLQ)", bookingId);
             throw new IllegalStateException("Booking not found for notification: " + bookingId);
         }
-
+        log.info("Sending the email notify to the user for the booking {} ",booking.getBookingId());
         emailNotificationService.sendBookingConfirmedEmail(booking);
         ack.acknowledge();
     }
