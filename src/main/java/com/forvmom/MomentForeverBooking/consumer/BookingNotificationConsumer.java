@@ -34,6 +34,7 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(name = "spring.mail.username")
 public class BookingNotificationConsumer {
 
+
     private static final Logger log = LoggerFactory.getLogger(BookingNotificationConsumer.class);
 
     private final BookingRepository bookingRepository;
