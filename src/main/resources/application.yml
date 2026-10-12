@@ -1,6 +1,5 @@
 # ==========================================================
 # SERVER CONFIGURATION
-
 # ==========================================================
 server:
   port: 8082
@@ -128,8 +127,6 @@ spring:
 
   # ----------------------------------------------------------
   # MAIL (booking confirmation notifications)
-  # PLACEHOLDER: replace SMTP_* env vars with real provider creds
-  # (Gmail app password, SES SMTP, SendGrid SMTP relay, Mailtrap for dev, etc.)
   # ----------------------------------------------------------
   mail:
     host: ${SMTP_HOST:}
