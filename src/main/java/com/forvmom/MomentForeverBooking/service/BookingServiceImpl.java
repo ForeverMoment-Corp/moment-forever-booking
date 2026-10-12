@@ -15,6 +15,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 public class BookingServiceImpl implements BookingService {
 
@@ -52,6 +54,15 @@ public class BookingServiceImpl implements BookingService {
     @Transactional(readOnly = true)
     public Page<Booking> getBookingsByUser(Long userId, Pageable pageable) {
         return bookingRepository.findAllByUserId(userId, pageable);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Booking> getAllBookings(List<BookingStatus> statuses, Long locationId, Pageable pageable) {
+        // Normalize "no filter" to null so the (:param IS NULL OR ...) branch in the
+        // query short-circuits instead of evaluating "IN ()" against an empty list.
+        List<BookingStatus> statusFilter = (statuses == null || statuses.isEmpty()) ? null : statuses;
+        return bookingRepository.findAllByOptionalStatusesAndLocationId(statusFilter, locationId, pageable);
     }
 
     // ─── Admin update methods ───────────────────────────────────────────

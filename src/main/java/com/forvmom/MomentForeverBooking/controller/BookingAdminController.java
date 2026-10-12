@@ -1,6 +1,7 @@
 package com.forvmom.MomentForeverBooking.controller;
 
 import com.forvmom.MomentForeverBooking.domain.entity.Booking;
+import com.forvmom.MomentForeverBooking.domain.enums.BookingStatus;
 import com.forvmom.MomentForeverBooking.service.BookingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -10,6 +11,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -21,6 +23,20 @@ public class BookingAdminController {
 
     public BookingAdminController(BookingService bookingService) {
         this.bookingService = bookingService;
+    }
+
+    @GetMapping
+    @Operation(summary = "List/Filter Bookings", description = "Paginated list of all bookings for the admin booking dashboard. "
+            + "Optionally filter by one or more statuses and/or a location. Omit a filter to include every value for it.")
+    public ResponseEntity<Page<Booking>> getAllBookings(
+            @RequestParam(required = false) List<BookingStatus> status,
+            @RequestParam(required = false) Long locationId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Booking> bookings = bookingService.getAllBookings(status, locationId, pageRequest);
+        return ResponseEntity.ok(bookings);
     }
 
     @GetMapping("/{bookingId}")

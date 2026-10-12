@@ -126,6 +126,26 @@ spring:
 
 
   # ----------------------------------------------------------
+  # MAIL (booking confirmation notifications)
+  # PLACEHOLDER: replace SMTP_* env vars with real provider creds
+  # (Gmail app password, SES SMTP, SendGrid SMTP relay, Mailtrap for dev, etc.)
+  # ----------------------------------------------------------
+  mail:
+    host: ${SMTP_HOST:smtp.example.com}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:placeholder-username}
+    password: ${SMTP_PASSWORD:placeholder-password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+
+
+  # ----------------------------------------------------------
   # FILE UPLOAD
   # ----------------------------------------------------------
   servlet:
@@ -168,6 +188,9 @@ app:
     max-size: 5242880
     allowed-extensions: jpg,jpeg,png,gif,webp
     serve-path: /uploads/**
+  mail:
+    # PLACEHOLDER: sender address shown to customers; needs a real, deliverable domain
+    from: ${MAIL_FROM_ADDRESS:no-reply@momentforever.example.com}
 
 slug:
   separator: "-"

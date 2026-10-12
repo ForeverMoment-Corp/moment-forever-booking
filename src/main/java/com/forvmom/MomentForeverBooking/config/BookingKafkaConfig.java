@@ -72,6 +72,7 @@ public class BookingKafkaConfig {
         // - booking-requested (from Core)
         // - payment-processed (from Payment service)
         // - payment-failed (from Payment service)
+        // - booking-confirmed (self-consumed, notification-group only, see BookingNotificationConsumer)
 
         @Bean
         public ConsumerFactory<String, Object> consumerFactory() {
@@ -113,7 +114,12 @@ public class BookingKafkaConfig {
                                                 "com.forvmom.payment.events.PaymentProcessedEvent:" +
                                                 "com.forvmom.MomentForeverBooking.events.PaymentProcessedEvent," +
                                                 "com.forvmom.payment.events.PaymentFailedEvent:" +
-                                                "com.forvmom.MomentForeverBooking.events.PaymentFailedEvent");
+                                                "com.forvmom.MomentForeverBooking.events.PaymentFailedEvent," +
+                                                // Booking service's own booking-confirmed event, re-consumed by the
+                                                // notification listener (BookingNotificationConsumer). The producer
+                                                // side tags this topic with the __TypeId__ below (see producerFactory).
+                                                "com.forvmom.common.dto.events.BookingConfirmedEvent:" +
+                                                "com.forvmom.MomentForeverBooking.events.BookingConfirmedEvent");
 
                 // Use the __TypeId__ header for type resolution (default true, but
                 // being explicit to document intent)

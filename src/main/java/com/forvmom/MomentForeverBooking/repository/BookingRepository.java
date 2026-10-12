@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -23,6 +24,18 @@ public interface BookingRepository extends JpaRepository<Booking, String> {
     Page<Booking> findAllByUserId(Long userId, Pageable pageable);
 
     Page<Booking> findAllByStatus(BookingStatus status, Pageable pageable);
+
+    // Backs the admin booking dashboard: both filters are optional and combinable.
+    // Pass null/empty statuses and null locationId to fetch everything (paginated).
+    @Query("""
+            SELECT booking FROM Booking booking
+            WHERE (:statuses IS NULL OR booking.status IN :statuses)
+              AND (:locationId IS NULL OR booking.locationId = :locationId)
+            """)
+    Page<Booking> findAllByOptionalStatusesAndLocationId(
+            @Param("statuses") List<BookingStatus> statuses,
+            @Param("locationId") Long locationId,
+            Pageable pageable);
 
     // The status predicate makes the first committed terminal transition the only winner.
     @Modifying(clearAutomatically = true, flushAutomatically = true)

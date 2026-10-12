@@ -23,7 +23,8 @@ import java.util.List;
 @Table(name = "bookings", indexes = {
         @Index(name = "idx_booking_user", columnList = "user_id"),
         @Index(name = "idx_booking_status", columnList = "status"),
-        @Index(name = "idx_booking_experience", columnList = "experience_id")
+        @Index(name = "idx_booking_experience", columnList = "experience_id"),
+        @Index(name = "idx_booking_location", columnList = "location_id")
 })
 public class Booking {
 
