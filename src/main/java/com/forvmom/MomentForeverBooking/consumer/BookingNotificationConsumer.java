@@ -6,6 +6,7 @@ import com.forvmom.MomentForeverBooking.repository.BookingRepository;
 import com.forvmom.MomentForeverBooking.service.notification.EmailNotificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -24,8 +25,13 @@ import org.springframework.stereotype.Component;
  * separate inbound-outbox/idempotency record is used here because a duplicate
  * confirmation email on redelivery is a minor UX nit, not a data-integrity issue —
  * unlike booking/payment state transitions, which do require exactly-once handling.
+ *
+ * <p>
+ * This consumer is only activated when {@code spring.mail.username} is set,
+ * since it depends on the conditional {@link EmailNotificationService}.
  */
 @Component
+@ConditionalOnProperty(name = "spring.mail.username")
 public class BookingNotificationConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(BookingNotificationConsumer.class);

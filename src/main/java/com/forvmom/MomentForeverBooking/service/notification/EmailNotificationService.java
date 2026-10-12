@@ -4,6 +4,7 @@ import com.forvmom.MomentForeverBooking.domain.entity.Booking;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -17,8 +18,13 @@ import org.springframework.stereotype.Service;
  * SES SMTP, SendGrid SMTP relay, etc.) must be supplied via the SMTP_HOST /
  * SMTP_PORT / SMTP_USERNAME / SMTP_PASSWORD / MAIL_FROM_ADDRESS env vars
  * before this can deliver real mail.
+ *
+ * <p>
+ * This bean is only created when {@code spring.mail.username} is set,
+ * allowing the application to start without SMTP credentials.
  */
 @Service
+@ConditionalOnProperty(name = "spring.mail.username")
 public class EmailNotificationService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailNotificationService.class);
