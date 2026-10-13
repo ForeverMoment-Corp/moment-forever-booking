@@ -214,6 +214,15 @@ management:
   endpoint:
     health:
       show-details: always
+      # SMTP failures must never mark the service DOWN (Consul uses
+      # /booking/actuator/health every 10s). Test mail via the
+      # local EmailPingController instead.
+      group:
+        readiness:
+          include: db,diskSpace,ping
+  health:
+    mail:
+      enabled: false
   probes:
     enabled: true
 
