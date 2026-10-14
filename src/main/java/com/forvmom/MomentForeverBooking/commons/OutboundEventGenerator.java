@@ -23,6 +23,10 @@ public class OutboundEventGenerator {
                 return buildBookingConfirmedEvent(booking, inboundEvent);
             }
 
+            if (eventType.equals(EventConstants.BOOKING_CANCELLED)) {
+                return buildBookingCancelledEvent(booking);
+            }
+
             if (eventType.equals(EventConstants.PAYMENT_REQUESTED)) {
                 return buildPaymentRequestedEvent(booking, inboundEvent);
             }
@@ -94,8 +98,32 @@ public class OutboundEventGenerator {
         return bookingFailedEvent;
     }
 
-    public static BookingFailedEvent buildDeadPaymentRequestFailure(
-            Booking booking,
+    /**
+     * Builds the cancellation event from the freshly-cancelled booking row.
+     * Unlike failure/confirmation flows there is no inbound Kafka event that
+     * triggered the cancel (it is HTTP-initiated), so identity uses the
+     * bookingId as correlation and no causation id.
+     */
+    public static BookingCancelledEvent buildBookingCancelledEvent(Booking booking) {
+        BookingCancelledEvent event = new BookingCancelledEvent();
+        applyIdentity(event, EventConstants.BOOKING_CANCELLED, booking.getBookingId(),
+                booking.getBookingId(), null);
+        event.setBookingId(booking.getBookingId());
+        event.setUserId(booking.getUserId());
+        event.setUserEmail(booking.getUserEmail());
+        event.setExperienceId(booking.getExperienceId());
+        event.setTimeSlotMapperId(booking.getTimeSlotMapperId());
+        event.setGuestCount(booking.getGuestCount());
+        if (booking.getBookingDate() != null) {
+            event.setBookingDate(booking.getBookingDate().toLocalDate());
+        }
+        event.setCancelReason(booking.getCancelReason());
+        event.setCancelledAt(booking.getCancelledAt() != null
+                ? booking.getCancelledAt() : LocalDateTime.now());
+        return event;
+    }
+
+    public static BookingFailedEvent buildDeadPaymentRequestFailure(            Booking booking,
             String failureReason,
             String causationId) {
         BookingFailedEvent event = new BookingFailedEvent();

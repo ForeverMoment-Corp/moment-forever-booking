@@ -69,4 +69,43 @@ public class EmailNotificationService {
             throw ex;
         }
     }
+
+    public void sendBookingCancelledEmail(Booking booking) {
+        if (booking.getUserEmail() == null || booking.getUserEmail().isBlank()) {
+            log.warn("Skipping booking-cancelled email: bookingId={} has no userEmail", booking.getBookingId());
+            return;
+        }
+
+        String recipientName = booking.getUserFullName() != null ? booking.getUserFullName() : "there";
+        String reasonLine = booking.getCancelReason() != null && !booking.getCancelReason().isBlank()
+                ? "Reason: " + booking.getCancelReason() + "\n"
+                : "";
+        // confirmedAt set means payment was captured before the cancel, so ops
+        // must refund manually (no auto-refund integration exists).
+        String refundLine = booking.getConfirmedAt() != null
+                ? "\nOur team will process your refund manually and notify you separately.\n"
+                : "";
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromAddress);
+        message.setTo(booking.getUserEmail());
+        message.setSubject("Your booking is cancelled — " + booking.getBookingId());
+        message.setText(
+                "Hi " + recipientName + ",\n\n" +
+                        "Your booking for \"" + booking.getExperienceName() + "\" on " + booking.getBookingDate()
+                        + " has been cancelled.\n\n" +
+                        "Booking reference: " + booking.getBookingId() + "\n" +
+                        reasonLine +
+                        refundLine +
+                        "\nWe hope to host you another time.");
+
+        try {
+            mailSender.send(message);
+            log.info("Booking-cancelled email sent: bookingId={}, to={}", booking.getBookingId(), booking.getUserEmail());
+        } catch (Exception ex) {
+            log.error("Failed to send booking-cancelled email: bookingId={}, error={}",
+                    booking.getBookingId(), ex.getMessage(), ex);
+            throw ex;
+        }
+    }
 }

@@ -13,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
@@ -142,8 +143,7 @@ public class BookingGlobalExceptionHandler {
 
         /**
          * Missing required @RequestParam → 400 BAD REQUEST
-         */
-        @ExceptionHandler(MissingServletRequestParameterException.class)
+         */        @ExceptionHandler(MissingServletRequestParameterException.class)
         public ResponseEntity<ApiErrorResponse> handleMissingParam(
                         MissingServletRequestParameterException ex,
                         HttpServletRequest request) {
@@ -153,6 +153,22 @@ public class BookingGlobalExceptionHandler {
                 log.warn("Missing request param — path={}, param={}", request.getRequestURI(), ex.getParameterName());
 
                 return buildResponse(HttpStatus.BAD_REQUEST, BookingErrorCode.INVALID_REQUEST, message,
+                                request.getRequestURI());
+        }
+
+        /**
+         * Missing identity header (e.g. X-User-Id on the user self-service APIs)
+         * → 401 UNAUTHORIZED. Behind the gateway this header is always injected;
+         * its absence means an unauthenticated direct call, not a bad request.
+         */
+        @ExceptionHandler(MissingRequestHeaderException.class)
+        public ResponseEntity<ApiErrorResponse> handleMissingIdentityHeader(
+                        MissingRequestHeaderException ex,
+                        HttpServletRequest request) {
+
+                log.warn("Missing identity header — path={}, header={}", request.getRequestURI(), ex.getHeaderName());
+                return buildResponse(HttpStatus.UNAUTHORIZED, BookingErrorCode.UNAUTHORIZED,
+                                "Authentication required. Missing header: '" + ex.getHeaderName() + "'.",
                                 request.getRequestURI());
         }
 

@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Manages lifecycle of {@link OutgoingOutboxRecord} — the outbox for events
  * this service publishes outward (payment-requested, booking-confirmed,
- * booking-failed).
+ * booking-failed, booking-cancelled).
  *
  * <p>
  * Callers save a record via {@link #createRecord(String, String, Object)},
@@ -34,7 +34,7 @@ public class OutgoingOutboxService {
      *
      * @param bookingId the booking reference this event belongs to
      * @param eventType e.g. "PAYMENT_REQUESTED", "BOOKING_CONFIRMED",
-     *                  "BOOKING_FAILED"
+     *                  "BOOKING_FAILED", "BOOKING_CANCELLED"
      * @param payload   the event object — will be serialised to JSON
      */
     @Transactional

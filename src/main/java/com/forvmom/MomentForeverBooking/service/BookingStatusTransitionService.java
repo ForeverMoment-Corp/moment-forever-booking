@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -38,9 +39,11 @@ public class BookingStatusTransitionService {
         return loadTransitionResult(bookingId, BookingStatus.FAILED, updatedBookings);
     }
 
-    public Optional<Booking> transitionPendingBookingToCancelled(String bookingId) {
-        int updatedBookings = bookingRepository.transitionPendingBookingToCancelled(
-                bookingId, LocalDateTime.now());
+    public Optional<Booking> transitionActiveBookingToCancelled(String bookingId, String cancelReason) {
+        LocalDateTime transitionTime = LocalDateTime.now();
+        int updatedBookings = bookingRepository.transitionActiveBookingToCancelled(
+                bookingId, cancelReason, transitionTime, transitionTime,
+                List.of(BookingStatus.PENDING, BookingStatus.CONFIRMED));
         return loadTransitionResult(bookingId, BookingStatus.CANCELLED, updatedBookings);
     }
 

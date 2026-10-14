@@ -36,10 +36,14 @@ public class BookingKafkaConfig {
         @Value("${kafka.topics.booking-failed}")
         private String bookingFailedTopic;
 
+        @Value("${kafka.topics.booking-cancelled}")
+        private String bookingCancelledTopic;
+
         // ==================== PRODUCER CONFIG ====================
         // Booking service produces:
         // - booking-confirmed (to Core)
         // - booking-failed (to Core)
+        // - booking-cancelled (to Core, for inventory release)
         // - payment-requested (to Payment service)
 
         @Bean
@@ -53,7 +57,9 @@ public class BookingKafkaConfig {
                                 "com.forvmom.common.dto.events.BookingConfirmedEvent:" +
                                                 "com.forvmom.MomentForeverBooking.events.BookingConfirmedEvent," +
                                                                 "com.forvmom.common.dto.events.BookingFailedEvent:" +
-                                                                "com.forvmom.MomentForeverBooking.events.BookingFailedEvent");
+                                                                "com.forvmom.MomentForeverBooking.events.BookingFailedEvent," +
+                                                                "com.forvmom.common.dto.events.BookingCancelledEvent:" +
+                                                                "com.forvmom.MomentForeverBooking.events.BookingCancelledEvent");
 
                 // Reliability settings
                 config.put(ProducerConfig.RETRIES_CONFIG, 3);
@@ -119,7 +125,11 @@ public class BookingKafkaConfig {
                                                 // notification listener (BookingNotificationConsumer). The producer
                                                 // side tags this topic with the __TypeId__ below (see producerFactory).
                                                 "com.forvmom.common.dto.events.BookingConfirmedEvent:" +
-                                                "com.forvmom.MomentForeverBooking.events.BookingConfirmedEvent");
+                                                "com.forvmom.MomentForeverBooking.events.BookingConfirmedEvent," +
+                                                // Same self-consumption for booking-cancelled
+                                                // (BookingCancelledNotificationConsumer).
+                                                "com.forvmom.common.dto.events.BookingCancelledEvent:" +
+                                                "com.forvmom.MomentForeverBooking.events.BookingCancelledEvent");
 
                 // Use the __TypeId__ header for type resolution (default true, but
                 // being explicit to document intent)
@@ -189,6 +199,14 @@ public class BookingKafkaConfig {
         @Bean
         public NewTopic bookingFailedTopic() {
                 return TopicBuilder.name(bookingFailedTopic)
+                                .partitions(1)
+                                .replicas(1)
+                                .build();
+        }
+
+        @Bean
+        public NewTopic bookingCancelledTopic() {
+                return TopicBuilder.name(bookingCancelledTopic)
                                 .partitions(1)
                                 .replicas(1)
                                 .build();

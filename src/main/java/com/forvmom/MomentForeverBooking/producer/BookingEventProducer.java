@@ -1,5 +1,6 @@
 package com.forvmom.MomentForeverBooking.producer;
 
+import com.forvmom.MomentForeverBooking.events.BookingCancelledEvent;
 import com.forvmom.MomentForeverBooking.events.BookingConfirmedEvent;
 import com.forvmom.MomentForeverBooking.events.BookingFailedEvent;
 import com.forvmom.MomentForeverBooking.events.PaymentRequestedEvent;
@@ -26,6 +27,9 @@ public class BookingEventProducer {
     @Value("${kafka.topics.booking-failed}")
     private String bookingFailedTopic;
 
+    @Value("${kafka.topics.booking-cancelled}")
+    private String bookingCancelledTopic;
+
     @Value("${kafka.topics.payment-requested}")
     private String paymentRequestedTopic;
 
@@ -42,6 +46,12 @@ public class BookingEventProducer {
     public void sendBookingFailedEvent(BookingFailedEvent event) throws ExecutionException, InterruptedException, TimeoutException {
         kafkaTemplate.send(bookingFailedTopic, event.getBookingId(), event).get(5, TimeUnit.SECONDS);
         log.info("Sent BookingFailedEvent: bookingId={}, eventId={}, correlationId={}",
+                event.getBookingId(), event.getEventId(), event.getCorrelationId());
+    }
+
+    public void sendBookingCancelledEvent(BookingCancelledEvent event) throws ExecutionException, InterruptedException, TimeoutException {
+        kafkaTemplate.send(bookingCancelledTopic, event.getBookingId(), event).get(5, TimeUnit.SECONDS);
+        log.info("Sent BookingCancelledEvent: bookingId={}, eventId={}, correlationId={}",
                 event.getBookingId(), event.getEventId(), event.getCorrelationId());
     }
 

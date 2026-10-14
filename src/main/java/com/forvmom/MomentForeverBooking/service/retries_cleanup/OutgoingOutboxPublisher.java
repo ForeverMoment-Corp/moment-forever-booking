@@ -2,6 +2,7 @@ package com.forvmom.MomentForeverBooking.service.retries_cleanup;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.forvmom.MomentForeverBooking.domain.entity.OutgoingOutboxRecord;
+import com.forvmom.MomentForeverBooking.events.BookingCancelledEvent;
 import com.forvmom.MomentForeverBooking.events.BookingConfirmedEvent;
 import com.forvmom.MomentForeverBooking.events.BookingFailedEvent;
 import com.forvmom.MomentForeverBooking.events.PaymentRequestedEvent;
@@ -178,6 +179,10 @@ public class OutgoingOutboxPublisher {
             case EventConstants.BOOKING_FAILED -> {
                 BookingFailedEvent event = objectMapper.readValue(json, BookingFailedEvent.class);
                 eventProducer.sendBookingFailedEvent(event);
+            }
+            case EventConstants.BOOKING_CANCELLED -> {
+                BookingCancelledEvent event = objectMapper.readValue(json, BookingCancelledEvent.class);
+                eventProducer.sendBookingCancelledEvent(event);
             }
             default -> log.warn("Unknown outgoing event type: {}", type);
         }

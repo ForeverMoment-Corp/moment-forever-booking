@@ -4,10 +4,13 @@ import com.forvmom.MomentForeverBooking.domain.entity.Booking;
 import com.forvmom.MomentForeverBooking.domain.entity.BookingAddon;
 import com.forvmom.MomentForeverBooking.domain.enums.BookingStatus;
 import com.forvmom.MomentForeverBooking.domain.enums.PricingLevel;
+import com.forvmom.MomentForeverBooking.dto.response.BookingAddonResponse;
+import com.forvmom.MomentForeverBooking.dto.response.BookingResponse;
 import com.forvmom.MomentForeverBooking.events.BookingRequestEvent;
 import com.forvmom.MomentForeverBooking.events.InboundEvent;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class BookingMapper {
 
@@ -51,5 +54,64 @@ public class BookingMapper {
             });
         }
         return booking;
+    }
+
+    /**
+     * Projects a managed {@code Booking} to its API response DTO.
+     *
+     * <p>Must be called <i>inside</i> the service transaction: it reads the
+     * LAZY {@code addons} collection, which requires an open session.
+     */
+    public static BookingResponse toResponse(Booking booking) {
+        BookingResponse response = new BookingResponse();
+        response.setBookingId(booking.getBookingId());
+        response.setBookingDate(booking.getBookingDate());
+        response.setUserId(booking.getUserId());
+        response.setUserEmail(booking.getUserEmail());
+        response.setUserFullName(booking.getUserFullName());
+        response.setUsername(booking.getUsername());
+        response.setExperienceId(booking.getExperienceId());
+        response.setExperienceName(booking.getExperienceName());
+        response.setExperienceSlug(booking.getExperienceSlug());
+        response.setLocationId(booking.getLocationId());
+        response.setLocationName(booking.getLocationName());
+        response.setTimeSlotMapperId(booking.getTimeSlotMapperId());
+        response.setTimeSlotId(booking.getTimeSlotId());
+        response.setTimeSlotLabel(booking.getTimeSlotLabel());
+        response.setStartTime(booking.getStartTime());
+        response.setEndTime(booking.getEndTime());
+        response.setGuestCount(booking.getGuestCount());
+        response.setStatus(booking.getStatus());
+        response.setResolvedPricePerPerson(booking.getResolvedPricePerPerson());
+        response.setPricingLevel(booking.getPricingLevel());
+        response.setTotalAmount(booking.getTotalAmount());
+        response.setAddonsTotal(booking.getAddonsTotal());
+        response.setGrandTotal(booking.getGrandTotal());
+        response.setPincode(booking.getPincode());
+        response.setFailureReason(booking.getFailureReason());
+        response.setCancelReason(booking.getCancelReason());
+        response.setRequestedAt(booking.getRequestedAt());
+        response.setConfirmedAt(booking.getConfirmedAt());
+        response.setCancelledAt(booking.getCancelledAt());
+        response.setCreatedAt(booking.getCreatedAt());
+        response.setUpdatedAt(booking.getUpdatedAt());
+        if (booking.getAddons() != null) {
+            List<BookingAddonResponse> addons = booking.getAddons().stream()
+                    .map(BookingMapper::toAddonResponse)
+                    .toList();
+            response.setAddons(addons);
+        }
+        return response;
+    }
+
+    /** Projects one add-on row; omits the back-reference to the booking (cycle). */
+    public static BookingAddonResponse toAddonResponse(BookingAddon addon) {
+        BookingAddonResponse response = new BookingAddonResponse();
+        response.setId(addon.getId());
+        response.setAddonMapperId(addon.getAddonMapperId());
+        response.setAddonName(addon.getAddonName());
+        response.setEffectivePrice(addon.getEffectivePrice());
+        response.setFree(addon.isFree());
+        return response;
     }
 }

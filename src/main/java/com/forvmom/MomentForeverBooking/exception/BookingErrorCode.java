@@ -18,6 +18,9 @@ public enum BookingErrorCode {
     VALIDATION_FAILED,
     INVALID_REQUEST,
 
+    // ---- Auth ----
+    UNAUTHORIZED,
+
     // ---- Kafka / Event Processing ----
     KAFKA_EVENT_PROCESSING_FAILED,
     DUPLICATE_EVENT_IGNORED,

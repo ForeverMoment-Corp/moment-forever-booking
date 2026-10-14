@@ -116,11 +116,23 @@ public class Booking {
     @Column(name = "failure_reason", length = 500)
     private String failureReason;
 
+    /**
+     * Why the booking was cancelled (admin/user-supplied, optional).
+     * Only populated when status is CANCELLED; kept separate from
+     * {@code failureReason} (payment/system failures) so dashboards and the
+     * cancellation email can distinguish "we failed" from "someone cancelled".
+     */
+    @Column(name = "cancel_reason", length = 500)
+    private String cancelReason;
+
     @Column(name = "requested_at")
     private LocalDateTime requestedAt;
 
     @Column(name = "confirmed_at")
     private LocalDateTime confirmedAt;
+
+    @Column(name = "cancelled_at")
+    private LocalDateTime cancelledAt;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -348,6 +360,14 @@ public class Booking {
         this.failureReason = failureReason;
     }
 
+    public String getCancelReason() {
+        return cancelReason;
+    }
+
+    public void setCancelReason(String cancelReason) {
+        this.cancelReason = cancelReason;
+    }
+
     public LocalDateTime getRequestedAt() {
         return requestedAt;
     }
@@ -362,6 +382,14 @@ public class Booking {
 
     public void setConfirmedAt(LocalDateTime confirmedAt) {
         this.confirmedAt = confirmedAt;
+    }
+
+    public LocalDateTime getCancelledAt() {
+        return cancelledAt;
+    }
+
+    public void setCancelledAt(LocalDateTime cancelledAt) {
+        this.cancelledAt = cancelledAt;
     }
 
     public LocalDateTime getCreatedAt() {

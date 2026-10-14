@@ -3,6 +3,7 @@ package com.forvmom.MomentForeverBooking.service.retries_cleanup;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.forvmom.MomentForeverBooking.commons.EventConstants;
 import com.forvmom.MomentForeverBooking.domain.entity.OutgoingOutboxRecord;
+import com.forvmom.MomentForeverBooking.events.BookingCancelledEvent;
 import com.forvmom.MomentForeverBooking.events.BookingConfirmedEvent;
 import com.forvmom.MomentForeverBooking.events.BookingFailedEvent;
 import com.forvmom.MomentForeverBooking.service.OutgoingOutboxService;
@@ -68,6 +69,10 @@ public class OutgoingOutboxDeadLetterHandler {
                 outgoingOutboxService.markAsDead(record);
                 compensateBookingFailed(bookingId, payload);
                 break;
+            case EventConstants.BOOKING_CANCELLED:
+                outgoingOutboxService.markAsDead(record);
+                compensateBookingCancelled(bookingId, payload);
+                break;
             default:
                 outgoingOutboxService.markAsDead(record);
                 log.warn("No compensation handler for outgoing dead event type: {}", eventType);
@@ -102,6 +107,20 @@ public class OutgoingOutboxDeadLetterHandler {
         // Less critical; just alert
         alertService.sendAlert(String.format(
                 "BOOKING_FAILED dead letter: booking %s is failed. Manual check recommended.",
+                bookingId
+        ));
+    }
+
+    private void compensateBookingCancelled(String bookingId, String payload) throws Exception {
+        log.warn("BOOKING_CANCELLED dead letter for bookingId={} – platform inventory NOT released", bookingId);
+        BookingCancelledEvent event = objectMapper.readValue(payload, BookingCancelledEvent.class);
+
+        // Same exposure as a dead BOOKING_FAILED: the platform never learns
+        // about the cancel, so its reservation stays RESERVED and the slot
+        // capacity is never freed. Ops must release it manually.
+        alertService.sendAlert(String.format(
+                "BOOKING_CANCELLED dead letter: booking %s is cancelled but platform inventory was not released. "
+                        + "Release reservation manually and verify slot capacity.",
                 bookingId
         ));
     }
