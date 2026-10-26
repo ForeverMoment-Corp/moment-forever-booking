@@ -5,7 +5,10 @@ import com.forvmom.MomentForeverBooking.domain.entity.OutgoingOutboxRecord;
 import com.forvmom.MomentForeverBooking.events.BookingCancelledEvent;
 import com.forvmom.MomentForeverBooking.events.BookingConfirmedEvent;
 import com.forvmom.MomentForeverBooking.events.BookingFailedEvent;
+import com.forvmom.MomentForeverBooking.events.ExperienceCompletedEvent;
 import com.forvmom.MomentForeverBooking.events.PaymentRequestedEvent;
+import com.forvmom.MomentForeverBooking.events.ReceiptEligibilityCapturedEvent;
+import com.forvmom.MomentForeverBooking.events.ReceiptGenerationRequestedEvent;
 import com.forvmom.MomentForeverBooking.producer.BookingEventProducer;
 import com.forvmom.MomentForeverBooking.repository.OutgoingOutboxDao;
 import com.forvmom.MomentForeverBooking.commons.EventConstants;
@@ -89,6 +92,9 @@ public class OutgoingOutboxPublisher {
     public void trySinglePublish(OutgoingOutboxRecord record) {
         if (record == null)
             return; // idempotent caller may pass null on duplicate
+        if (OutgoingOutboxRecord.STATUS_SENT.equals(record.getStatus())) {
+            return;
+        }
         try {
             sendToKafka(record);
             outgoingOutboxService.markAsSent(record);
@@ -183,6 +189,20 @@ public class OutgoingOutboxPublisher {
             case EventConstants.BOOKING_CANCELLED -> {
                 BookingCancelledEvent event = objectMapper.readValue(json, BookingCancelledEvent.class);
                 eventProducer.sendBookingCancelledEvent(event);
+            }
+            case EventConstants.RECEIPT_GENERATION_REQUESTED -> {
+                ReceiptGenerationRequestedEvent event = objectMapper.readValue(
+                        json, ReceiptGenerationRequestedEvent.class);
+                eventProducer.sendReceiptGenerationRequestedEvent(event);
+            }
+            case EventConstants.RECEIPT_ELIGIBILITY_CAPTURED -> {
+                ReceiptEligibilityCapturedEvent event = objectMapper.readValue(
+                        json, ReceiptEligibilityCapturedEvent.class);
+                eventProducer.sendReceiptEligibilityCapturedEvent(event);
+            }
+            case EventConstants.EXPERIENCE_COMPLETED -> {
+                ExperienceCompletedEvent event = objectMapper.readValue(json, ExperienceCompletedEvent.class);
+                eventProducer.sendExperienceCompletedEvent(event);
             }
             default -> log.warn("Unknown outgoing event type: {}", type);
         }

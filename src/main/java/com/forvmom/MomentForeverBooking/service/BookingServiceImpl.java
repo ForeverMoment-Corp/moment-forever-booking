@@ -10,6 +10,7 @@ import com.forvmom.MomentForeverBooking.dto.response.BookingMetricsResponse;
 import com.forvmom.MomentForeverBooking.dto.response.BookingResponse;
 import com.forvmom.MomentForeverBooking.dto.response.BookingTimelineEntry;
 import com.forvmom.MomentForeverBooking.events.BookingCancelledEvent;
+import com.forvmom.MomentForeverBooking.events.ExperienceCompletedEvent;
 import com.forvmom.MomentForeverBooking.events.InboundEvent;
 import com.forvmom.MomentForeverBooking.exception.BookingNotFoundException;
 import com.forvmom.MomentForeverBooking.exception.BookingStatusConflictException;
@@ -62,7 +63,7 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public OutgoingOutboxRecord processBookingRequest(InboundEvent event) {
         // Delegate to the appropriate strategy via registry
-        return processorRegistry.getProcessor(event.getEventType()).process(event);
+        return processorRegistry.getProcessor(event.getEventType()).process(event).firstRecordOrNull();
     }
 
 
@@ -157,10 +158,16 @@ public class BookingServiceImpl implements BookingService {
                 BookingStatus.PENDING.name(), "Booking requested, payment pending", requestedAt, null));
 
 
-        if (booking.getStatus() == BookingStatus.CONFIRMED) {
+        if (booking.getStatus() == BookingStatus.CONFIRMED || booking.getStatus() == BookingStatus.COMPLETED) {
             LocalDateTime confirmedAt = booking.getConfirmedAt() != null ? booking.getConfirmedAt() : booking.getUpdatedAt();
             timeline.add(new BookingTimelineEntry(
                     BookingStatus.CONFIRMED.name(), "Payment confirmed, booking confirmed", confirmedAt, null));
+        }
+        if (booking.getStatus() == BookingStatus.COMPLETED) {
+            LocalDateTime completedAt = booking.getCompletedAt() != null
+                    ? booking.getCompletedAt() : booking.getUpdatedAt();
+            timeline.add(new BookingTimelineEntry(
+                    BookingStatus.COMPLETED.name(), "Experience completed", completedAt, null));
         } else if (booking.getStatus() == BookingStatus.FAILED) {
             timeline.add(new BookingTimelineEntry(
                     BookingStatus.FAILED.name(), "Payment failed", booking.getUpdatedAt(), booking.getFailureReason()));
@@ -184,6 +191,7 @@ public class BookingServiceImpl implements BookingService {
 
         long pending = 0;
         long confirmed = 0;
+        long completed = 0;
         long failed = 0;
         long cancelled = 0;
         long total = 0;
@@ -194,6 +202,7 @@ public class BookingServiceImpl implements BookingService {
             switch (status) {
                 case PENDING -> pending = count;
                 case CONFIRMED -> confirmed = count;
+                case COMPLETED -> completed = count;
                 case FAILED -> failed = count;
                 case CANCELLED -> cancelled = count;
             }
@@ -202,7 +211,7 @@ public class BookingServiceImpl implements BookingService {
 
         BigDecimal conversionRate = total == 0
                 ? BigDecimal.ZERO
-                : BigDecimal.valueOf(confirmed)
+                : BigDecimal.valueOf(confirmed + completed)
                 .multiply(BigDecimal.valueOf(100))
                 .divide(BigDecimal.valueOf(total), 2, RoundingMode.HALF_UP);
 
@@ -219,6 +228,7 @@ public class BookingServiceImpl implements BookingService {
         metrics.setTotal(total);
         metrics.setPending(pending);
         metrics.setConfirmed(confirmed);
+        metrics.setCompleted(completed);
         metrics.setFailed(failed);
         metrics.setCancelled(cancelled);
         metrics.setConversionRatePercent(conversionRate);
@@ -268,5 +278,31 @@ public class BookingServiceImpl implements BookingService {
         // race, so cancelling now would overwrite the winner. 409 either way;
         // the caller can retry (a retry re-runs the CAS against fresh state).
         throw new BookingStatusConflictException(bookingId, booking.getStatus().name(), "cancel");
+    }
+
+    @Override
+    @Transactional
+    public OutgoingOutboxRecord completeBooking(String bookingId) {
+        Optional<Booking> won = bookingStatusTransitionService
+                .transitionConfirmedBookingToCompleted(bookingId);
+        if (won.isPresent()) {
+            Booking booking = won.get();
+            ExperienceCompletedEvent event = (ExperienceCompletedEvent)
+                    OutboundEventGenerator.buildOutboundEvent(
+                            booking, EventConstants.EXPERIENCE_COMPLETED, null);
+            OutgoingOutboxRecord record = outgoingOutboxService.createRecord(
+                    bookingId, EventConstants.EXPERIENCE_COMPLETED, event);
+            log.info("Booking completion won and outbox staged: bookingId={}, outboxId={}",
+                    bookingId, record.getId());
+            return record;
+        }
+
+        Booking booking = bookingRepository.findByBookingId(bookingId)
+                .orElseThrow(() -> new BookingNotFoundException("Booking not found: " + bookingId));
+        if (booking.getStatus() == BookingStatus.COMPLETED) {
+            log.info("Booking completion skipped idempotently: bookingId={}", bookingId);
+            return null;
+        }
+        throw new BookingStatusConflictException(bookingId, booking.getStatus().name(), "complete");
     }
 }

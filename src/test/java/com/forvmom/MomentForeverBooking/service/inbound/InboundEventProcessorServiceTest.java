@@ -32,7 +32,7 @@ class InboundEventProcessorServiceTest {
         OutgoingOutboxRecord outgoingOutboxRecord = new OutgoingOutboxRecord();
         when(inboundOutboxService.findOrCreateForEvent(inboundEvent)).thenReturn(inboundOutbox);
         when(transactionService.processInboundEventAtomically(inboundOutbox, inboundEvent))
-                .thenReturn(outgoingOutboxRecord);
+                .thenReturn(OutboundProcessingResult.of(outgoingOutboxRecord));
 
         processorService.processEvent(inboundEvent, acknowledgment);
 

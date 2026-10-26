@@ -2,7 +2,6 @@ package com.forvmom.MomentForeverBooking.service.inbound;
 
 import com.forvmom.MomentForeverBooking.commons.EventConstants;
 import com.forvmom.MomentForeverBooking.domain.entity.InboundOutbox;
-import com.forvmom.MomentForeverBooking.domain.entity.OutgoingOutboxRecord;
 import com.forvmom.MomentForeverBooking.events.InboundEvent;
 import com.forvmom.MomentForeverBooking.service.InboundOutboxService;
 import com.forvmom.MomentForeverBooking.service.retries_cleanup.OutgoingOutboxPublisher;
@@ -48,14 +47,12 @@ public class InboundEventProcessorService {
 
         try {
             inboundOutboxService.markAsProcessing(inboundOutbox);
-            OutgoingOutboxRecord outgoingOutboxRecord =
+            OutboundProcessingResult result =
                     inboundEventProcessingTransactionService.processInboundEventAtomically(
                             inboundOutbox, inboundEvent);
 
             // Publish outside the transaction (no DB connection held)
-            if (outgoingOutboxRecord != null) {
-                outgoingOutboxPublisher.trySinglePublish(outgoingOutboxRecord);
-            }
+            result.records().forEach(outgoingOutboxPublisher::trySinglePublish);
             log.info("Successfully processed inbound event: {} for bookingId={}, producer={}, eventId={}, correlationId={}",
                     eventType, bookingId, inboundEvent.getProducer(), inboundEvent.getEventId(),
                     inboundEvent.getCorrelationId());

@@ -23,6 +23,9 @@ public final class EventConstants {
     public static final String BOOKING_CONFIRMED = "BOOKING_CONFIRMED";
     public static final String BOOKING_FAILED = "BOOKING_FAILED";
     public static final String BOOKING_CANCELLED = "BOOKING_CANCELLED";
+    public static final String RECEIPT_GENERATION_REQUESTED = "RECEIPT_GENERATION_REQUESTED";
+    public static final String RECEIPT_ELIGIBILITY_CAPTURED = "RECEIPT_ELIGIBILITY_CAPTURED";
+    public static final String EXPERIENCE_COMPLETED = "EXPERIENCE_COMPLETED";
 
     // ==========================================================
     // PAYMENT EVENTS

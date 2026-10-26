@@ -57,6 +57,20 @@ public interface BookingRepository extends JpaRepository<Booking, String>, JpaSp
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
             UPDATE Booking booking
+            SET booking.status = com.forvmom.MomentForeverBooking.domain.enums.BookingStatus.COMPLETED,
+                booking.completedAt = :completedAt,
+                booking.updatedAt = :updatedAt
+            WHERE booking.bookingId = :bookingId
+              AND booking.status = com.forvmom.MomentForeverBooking.domain.enums.BookingStatus.CONFIRMED
+            """)
+    int transitionConfirmedBookingToCompleted(
+            @Param("bookingId") String bookingId,
+            @Param("completedAt") LocalDateTime completedAt,
+            @Param("updatedAt") LocalDateTime updatedAt);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE Booking booking
             SET booking.status = com.forvmom.MomentForeverBooking.domain.enums.BookingStatus.FAILED,
                 booking.failureReason = :failureReason,
                 booking.updatedAt = :updatedAt

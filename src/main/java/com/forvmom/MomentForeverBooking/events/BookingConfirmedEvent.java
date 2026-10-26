@@ -7,9 +7,12 @@ public class BookingConfirmedEvent extends BaseEvent implements OutboundEvent {
     private String bookingId;
     private Long userId;
     private String userEmail;
+    private String userFullName;
     private Long experienceId;
+    private String experienceName;
     private Long timeSlotMapperId;
     private Integer guestCount;
+    private LocalDateTime bookingDate;
     private LocalDateTime confirmedAt;
 
     public BookingConfirmedEvent() {
@@ -51,12 +54,28 @@ public class BookingConfirmedEvent extends BaseEvent implements OutboundEvent {
         return userEmail;
     }
 
+    public String getUserFullName() {
+        return userFullName;
+    }
+
+    public void setUserFullName(String userFullName) {
+        this.userFullName = userFullName;
+    }
+
     public void setUserEmail(String userEmail) {
         this.userEmail = userEmail;
     }
 
     public Long getExperienceId() {
         return experienceId;
+    }
+
+    public String getExperienceName() {
+        return experienceName;
+    }
+
+    public void setExperienceName(String experienceName) {
+        this.experienceName = experienceName;
     }
 
     public void setExperienceId(Long experienceId) {
@@ -73,6 +92,14 @@ public class BookingConfirmedEvent extends BaseEvent implements OutboundEvent {
 
     public Integer getGuestCount() {
         return guestCount;
+    }
+
+    public LocalDateTime getBookingDate() {
+        return bookingDate;
+    }
+
+    public void setBookingDate(LocalDateTime bookingDate) {
+        this.bookingDate = bookingDate;
     }
 
     public void setGuestCount(Integer guestCount) {

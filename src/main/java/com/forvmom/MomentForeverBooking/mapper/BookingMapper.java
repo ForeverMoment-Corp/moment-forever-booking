@@ -92,6 +92,7 @@ public class BookingMapper {
         response.setCancelReason(booking.getCancelReason());
         response.setRequestedAt(booking.getRequestedAt());
         response.setConfirmedAt(booking.getConfirmedAt());
+        response.setCompletedAt(booking.getCompletedAt());
         response.setCancelledAt(booking.getCancelledAt());
         response.setCreatedAt(booking.getCreatedAt());
         response.setUpdatedAt(booking.getUpdatedAt());

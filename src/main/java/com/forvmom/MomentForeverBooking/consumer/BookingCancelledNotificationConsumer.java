@@ -1,12 +1,9 @@
 package com.forvmom.MomentForeverBooking.consumer;
 
-import com.forvmom.MomentForeverBooking.domain.entity.Booking;
 import com.forvmom.MomentForeverBooking.events.BookingCancelledEvent;
-import com.forvmom.MomentForeverBooking.repository.BookingRepository;
-import com.forvmom.MomentForeverBooking.service.notification.EmailNotificationService;
+import com.forvmom.MomentForeverBooking.service.notification.LifecycleNotificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -26,33 +23,20 @@ import org.springframework.stereotype.Component;
  * depends on the conditional {@link EmailNotificationService}.
  */
 @Component
-@ConditionalOnProperty(name = "spring.mail.username")
 public class BookingCancelledNotificationConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(BookingCancelledNotificationConsumer.class);
 
-    private final BookingRepository bookingRepository;
-    private final EmailNotificationService emailNotificationService;
+    private final LifecycleNotificationService lifecycleNotificationService;
 
-    public BookingCancelledNotificationConsumer(BookingRepository bookingRepository,
-                                               EmailNotificationService emailNotificationService) {
-        this.bookingRepository = bookingRepository;
-        this.emailNotificationService = emailNotificationService;
+    public BookingCancelledNotificationConsumer(LifecycleNotificationService lifecycleNotificationService) {
+        this.lifecycleNotificationService = lifecycleNotificationService;
     }
 
     @KafkaListener(topics = "${kafka.topics.booking-cancelled}", groupId = "booking-notification-group", containerFactory = "kafkaListenerContainerFactory")
     public void onBookingCancelled(@Payload BookingCancelledEvent event, Acknowledgment ack) {
-        String bookingId = event.getBookingId();
-
-        // Re-fetch the full row: the event carries IDs, not the display
-        // fields (experienceName, userFullName, cancelReason) for the email.
-        Booking booking = bookingRepository.findByBookingId(bookingId).orElse(null);
-        if (booking == null) {
-            log.error("Booking-cancelled notification skipped: bookingId={} not found (will retry/DLQ)", bookingId);
-            throw new IllegalStateException("Booking not found for notification: " + bookingId);
-        }
-        log.info("Sending the cancellation email to the user for the booking {}", booking.getBookingId());
-        emailNotificationService.sendBookingCancelledEmail(booking);
+        log.info("Dispatching booking-cancelled lifecycle notifications: bookingId={}", event.getBookingId());
+        lifecycleNotificationService.notifyCancelled(event);
         ack.acknowledge();
     }
 }

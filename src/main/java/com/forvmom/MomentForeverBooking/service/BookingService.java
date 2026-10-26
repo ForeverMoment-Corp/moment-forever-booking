@@ -70,5 +70,6 @@ public interface BookingService {
     // Idempotent when already CANCELLED; 404 when absent; 409 when FAILED.
     // CONFIRMED cancels require a manual ops refund (see docs/cancellation).
     OutgoingOutboxRecord cancelBooking(String bookingId, String cancelReason);
-}
 
+    OutgoingOutboxRecord completeBooking(String bookingId);
+}

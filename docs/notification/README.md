@@ -165,6 +165,17 @@ app:
   outbound event, so there is no equivalent trigger for a "booking cancelled"
   email yet — would need a `BOOKING_CANCELLED` outbox/topic first.
 - **User notification preferences** (opt out, SMS/push in addition to email).
+
+## Current channel and DLT operations
+
+Booking lifecycle payloads now include the customer-facing fields required by
+the confirmation and cancellation notifications. The Booking JVM dispatches
+email and WhatsApp independently; WhatsApp is disabled by default via
+`BOOKING_WHATSAPP_NOTIFICATIONS_ENABLED=false`. Missing recipient data or
+email/WhatsApp configuration is explicitly logged as skipped and acknowledged
+without retry. Transient provider failures retry three times and then reach
+the matching `.DLT`, where `BookingNotificationDltConsumer` emits an
+operations alert without logging recipient addresses or message bodies.
 - **Templated subject/body localization (i18n)** if the customer base expands
   beyond one language.
 - **Re-point to a real "completed" status** once the vendor-task-completion

@@ -152,3 +152,10 @@ cancel response itself does not distinguish PENDING vs CONFIRMED — check
    one; templating is a shared notification improvement, not cancel-specific.
 7. **Metrics.** Cancelled counts already flow into the dashboard KPIs
    (`countByStatusInRange`); cancel-rate / reason-breakdown cards are open.
+
+## 8. Receipt policy
+
+If a confirmed booking is cancelled or manually refunded, its original
+non-GST payment receipt remains immutable. No automatic credit note, refund
+receipt, or replacement document is generated. Finance handles manual refunds
+outside this event flow and must not alter the original fiscal document.

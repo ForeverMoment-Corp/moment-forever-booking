@@ -11,6 +11,7 @@ import com.forvmom.MomentForeverBooking.events.PaymentProcessedEvent;
 import com.forvmom.MomentForeverBooking.repository.BookingRepository;
 import com.forvmom.MomentForeverBooking.repository.InboundOutboxDao;
 import com.forvmom.MomentForeverBooking.repository.OutgoingOutboxDao;
+import com.forvmom.MomentForeverBooking.service.BookingService;
 import com.forvmom.MomentForeverBooking.service.InboundOutboxService;
 import com.forvmom.MomentForeverBooking.service.retries_cleanup.OutgoingOutboxPublisher;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,6 +56,9 @@ class InboundEventProcessingTransactionIntegrationTest {
 
     @Autowired
     private InboundOutboxService inboundOutboxService;
+
+    @Autowired
+    private BookingService bookingService;
 
     @Autowired
     private BookingRepository bookingRepository;
@@ -136,6 +140,48 @@ class InboundEventProcessingTransactionIntegrationTest {
         assertEquals(
                 EventConstants.PENDING,
                 inboundOutboxDao.findById(inbound.getId()).orElseThrow().getStatus());
+    }
+
+    @Test
+    void paymentProcessedCommitsConfirmationAndEligibilityOutboxRecordsTogether() {
+        String bookingId = "booking-payment-success";
+        bookingRepository.saveAndFlush(pendingBooking(bookingId));
+        PaymentProcessedEvent event = paymentProcessedEvent(bookingId, "payment-event-success");
+        InboundOutbox inbound = inboundOutboxService.findOrCreateForEvent(event);
+
+        OutboundProcessingResult result = transactionService.processInboundEventAtomically(inbound, event);
+
+        assertEquals(BookingStatus.CONFIRMED, bookingRepository.findById(bookingId).orElseThrow().getStatus());
+        assertEquals(2, result.records().size());
+        List<OutgoingOutboxRecord> outgoingRecords = outgoingOutboxDao.findAll();
+        assertEquals(2, outgoingRecords.size());
+        assertTrue(outgoingRecords.stream()
+                .anyMatch(record -> EventConstants.BOOKING_CONFIRMED.equals(record.getEventType())));
+        assertTrue(outgoingRecords.stream()
+                .anyMatch(record -> EventConstants.RECEIPT_ELIGIBILITY_CAPTURED.equals(record.getEventType())));
+        assertEquals(
+                EventConstants.PROCESSED,
+                inboundOutboxDao.findById(inbound.getId()).orElseThrow().getStatus());
+    }
+
+    @Test
+    void completionCommitsStatusAndExperienceCompletedOutboxRecordTogether() {
+        String bookingId = "booking-completion-success";
+        Booking booking = pendingBooking(bookingId);
+        booking.setStatus(BookingStatus.CONFIRMED);
+        booking.setConfirmedAt(LocalDateTime.of(2026, 8, 23, 12, 5));
+        bookingRepository.saveAndFlush(booking);
+
+        OutgoingOutboxRecord record = bookingService.completeBooking(bookingId);
+
+        Booking completed = bookingRepository.findById(bookingId).orElseThrow();
+        assertEquals(BookingStatus.COMPLETED, completed.getStatus());
+        assertTrue(completed.getCompletedAt() != null);
+        assertEquals(EventConstants.EXPERIENCE_COMPLETED, record.getEventType());
+        assertEquals(1, outgoingOutboxDao.count());
+        assertEquals(
+                EventConstants.EXPERIENCE_COMPLETED,
+                outgoingOutboxDao.findAll().get(0).getEventType());
     }
 
     @Test

@@ -3,7 +3,6 @@ package com.forvmom.MomentForeverBooking.service.inbound;
 import com.forvmom.MomentForeverBooking.commons.EventConstants;
 import com.forvmom.MomentForeverBooking.commons.OutboundEventGenerator;
 import com.forvmom.MomentForeverBooking.domain.entity.Booking;
-import com.forvmom.MomentForeverBooking.domain.entity.OutgoingOutboxRecord;
 import com.forvmom.MomentForeverBooking.events.BookingFailedEvent;
 import com.forvmom.MomentForeverBooking.events.InboundEvent;
 import com.forvmom.MomentForeverBooking.events.PaymentFailedEvent;
@@ -31,13 +30,13 @@ public class PaymentFailedProcessor implements InboundBookingEventProcessor {
     }
 
     @Override
-    public OutgoingOutboxRecord process(InboundEvent inboundEvent) {
+    public OutboundProcessingResult process(InboundEvent inboundEvent) {
         String failureReason = resolveFailureReason((PaymentFailedEvent) inboundEvent);
         Booking booking = bookingStatusTransitionService
                 .transitionPendingBookingToFailed(inboundEvent.getBookingId(), failureReason)
                 .orElse(null);
         if (booking == null) {
-            return null;
+            return OutboundProcessingResult.none();
         }
 
         BookingFailedEvent bookingFailedEvent = (BookingFailedEvent)
@@ -45,11 +44,11 @@ public class PaymentFailedProcessor implements InboundBookingEventProcessor {
                         booking, EventConstants.BOOKING_FAILED, inboundEvent);
         bookingFailedEvent.setFailureReason(failureReason);
 
-        OutgoingOutboxRecord outgoingOutboxRecord = outgoingOutboxService.createRecord(
+        var outgoingOutboxRecord = outgoingOutboxService.createRecord(
                 inboundEvent.getBookingId(), EventConstants.BOOKING_FAILED, bookingFailedEvent);
         log.warn("Booking failure outbox created: bookingId={}, eventType={}, failureReason={}",
                 inboundEvent.getBookingId(), EventConstants.BOOKING_FAILED, failureReason);
-        return outgoingOutboxRecord;
+        return OutboundProcessingResult.of(outgoingOutboxRecord);
     }
 
     private String resolveFailureReason(PaymentFailedEvent paymentFailedEvent) {

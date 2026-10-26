@@ -10,14 +10,18 @@ import com.forvmom.MomentForeverBooking.repository.InboundOutboxDao;
 import com.forvmom.MomentForeverBooking.repository.OutgoingOutboxDao;
 import com.forvmom.MomentForeverBooking.service.InboundOutboxService;
 import com.forvmom.MomentForeverBooking.service.inbound.InboundEventProcessingTransactionService;
+import com.forvmom.MomentForeverBooking.service.inbound.OutboundProcessingResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Set;
 
 /**
  * Retries failed inbound records by completing committed work or atomically
@@ -31,11 +35,12 @@ public class InboundOutboxRetryService {
     private static final long GRACE_PERIOD_MINUTES = 2;
 
 
-    // Mapping from inbound event type to the expected outgoing event type
-    private static final Map<String, String> OUTGOING_EVENT_TYPE_MAP = Map.of(
-            EventConstants.BOOKING_REQUESTED, EventConstants.PAYMENT_REQUESTED,
-            EventConstants.PAYMENT_PROCESSED, EventConstants.BOOKING_CONFIRMED,
-            EventConstants.PAYMENT_FAILED, EventConstants.BOOKING_FAILED
+    private static final Map<String, List<String>> OUTGOING_EVENT_TYPE_MAP = Map.of(
+            EventConstants.BOOKING_REQUESTED, List.of(EventConstants.PAYMENT_REQUESTED),
+            EventConstants.PAYMENT_PROCESSED, List.of(
+                    EventConstants.BOOKING_CONFIRMED,
+                    EventConstants.RECEIPT_ELIGIBILITY_CAPTURED),
+            EventConstants.PAYMENT_FAILED, List.of(EventConstants.BOOKING_FAILED)
     );
 
     // Mapping from inbound event type to the corresponding event class for deserialization
@@ -100,18 +105,18 @@ public class InboundOutboxRetryService {
             String eventType = inboundOutbox.getEventType();
 
             // Determine expected outgoing event type
-            String outgoingEventType = OUTGOING_EVENT_TYPE_MAP.get(eventType);
-            if (outgoingEventType == null) {
+            List<String> outgoingEventTypes = OUTGOING_EVENT_TYPE_MAP.get(eventType);
+            if (outgoingEventTypes == null) {
                 log.warn("No outgoing event mapping for event type: {}", eventType);
                 inboundOutboxService.markAsFailed(inboundOutbox);
                 continue;
             }
             try {
-                OutgoingOutboxRecord outgoingOutboxRecord = handleIncomingEventRetry(inboundOutbox, bookingId, eventType, outgoingEventType);
-                if (outgoingOutboxRecord != null &&
-                        !OutgoingOutboxRecord.STATUS_SENT.equals(outgoingOutboxRecord.getStatus())) {
-                    outgoingOutboxPublisher.trySinglePublish(outgoingOutboxRecord);
-                }
+                List<OutgoingOutboxRecord> outgoingRecords = handleIncomingEventRetry(
+                        inboundOutbox, bookingId, eventType, outgoingEventTypes);
+                outgoingRecords.stream()
+                        .filter(record -> !OutgoingOutboxRecord.STATUS_SENT.equals(record.getStatus()))
+                        .forEach(outgoingOutboxPublisher::trySinglePublish);
             } catch (Exception e) {
                 log.warn("Retry failed for bookingId={}, eventType={}, error: {}", bookingId, eventType, e.getMessage());
                 inboundOutboxService.markAsFailed(inboundOutbox);
@@ -119,23 +124,50 @@ public class InboundOutboxRetryService {
         }
     }
 
-    private OutgoingOutboxRecord handleIncomingEventRetry(InboundOutbox inboundOutbox, String bookingId, String eventType, String outgoingEventType) throws JsonProcessingException {
-        // Branch A: Check if outgoing record already exists
-        Optional<OutgoingOutboxRecord> existingOutgoing = outgoingOutboxDao.findByBookingIdAndEventType(
-                bookingId, outgoingEventType);
-        if (existingOutgoing.isPresent()) {
-            inboundEventProcessingTransactionService.markInboundEventAsProcessed(inboundOutbox);
-            return existingOutgoing.get();
+    private List<OutgoingOutboxRecord> handleIncomingEventRetry(
+            InboundOutbox inboundOutbox,
+            String bookingId,
+            String eventType,
+            List<String> expectedEventTypes) throws JsonProcessingException {
+        Map<String, OutgoingOutboxRecord> recordsByType = new LinkedHashMap<>();
+        Set<String> missingEventTypes = new LinkedHashSet<>();
+        for (String expectedEventType : expectedEventTypes) {
+            outgoingOutboxDao.findByBookingIdAndEventType(bookingId, expectedEventType)
+                    .ifPresentOrElse(
+                            record -> recordsByType.put(expectedEventType, record),
+                            () -> missingEventTypes.add(expectedEventType));
         }
 
-        // Branch B: No outgoing record, re-run the full process
-        log.info("[Branch-B] No outgoing record for bookingId={} — re-running inbound processing", bookingId);
+        if (missingEventTypes.isEmpty()) {
+            inboundEventProcessingTransactionService.markInboundEventAsProcessed(inboundOutbox);
+            return recordsInExpectedOrder(recordsByType, expectedEventTypes);
+        }
+
         Class<? extends InboundEvent> inboundEventClass = EVENT_CLASS_MAP.get(eventType);
         if (inboundEventClass == null) {
             throw new IllegalArgumentException("No inbound event class mapping for event type: " + eventType);
         }
         InboundEvent inboundEvent = objectMapper.readValue(inboundOutbox.getPayload(), inboundEventClass);
-        return inboundEventProcessingTransactionService.processInboundEventAtomically(
-                inboundOutbox, inboundEvent);
+        OutboundProcessingResult restored = inboundEventProcessingTransactionService
+                .reconcileInboundEventAtomically(inboundOutbox, inboundEvent, missingEventTypes);
+        restored.records().forEach(record -> recordsByType.put(record.getEventType(), record));
+        if (!recordsByType.keySet().containsAll(expectedEventTypes)) {
+            throw new IllegalStateException("Required outgoing records are still missing after retry");
+        }
+        return recordsInExpectedOrder(recordsByType, expectedEventTypes);
+    }
+
+    private List<OutgoingOutboxRecord> recordsInExpectedOrder(
+            Map<String, OutgoingOutboxRecord> recordsByType,
+            List<String> expectedEventTypes) {
+        List<OutgoingOutboxRecord> records = new ArrayList<>();
+        for (String expectedEventType : expectedEventTypes) {
+            OutgoingOutboxRecord record = recordsByType.get(expectedEventType);
+            if (record == null) {
+                throw new IllegalStateException("Required outgoing record is missing: " + expectedEventType);
+            }
+            records.add(record);
+        }
+        return records;
     }
 }

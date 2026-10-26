@@ -81,7 +81,7 @@ public final class BookingSearch {
      */
     public static List<Filter> confirmedInRange(LocalDateTime from, LocalDateTime to) {
         return List.of(
-                Filter.eq(STATUS, BookingStatus.CONFIRMED),
+                Filter.in(STATUS, List.of(BookingStatus.CONFIRMED, BookingStatus.COMPLETED)),
                 Filter.gte(CREATED_AT, from),
                 Filter.lte(CREATED_AT, to));
     }

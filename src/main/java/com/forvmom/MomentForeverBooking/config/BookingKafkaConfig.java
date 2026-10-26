@@ -39,6 +39,27 @@ public class BookingKafkaConfig {
         @Value("${kafka.topics.booking-cancelled}")
         private String bookingCancelledTopic;
 
+        @Value("${kafka.topics.receipt-generation-requested}")
+        private String receiptGenerationRequestedTopic;
+
+        @Value("${kafka.topics.receipt-eligibility-captured}")
+        private String receiptEligibilityCapturedTopic;
+
+        @Value("${kafka.topics.experience-completed}")
+        private String experienceCompletedTopic;
+
+        @Value("${kafka.topics.receipt-delivery-requested}")
+        private String receiptDeliveryRequestedTopic;
+
+        @Value("${kafka.topics.booking-confirmed-dlt}")
+        private String bookingConfirmedDltTopic;
+
+        @Value("${kafka.topics.booking-cancelled-dlt}")
+        private String bookingCancelledDltTopic;
+
+        @Value("${kafka.topics.receipt-delivery-dlt}")
+        private String receiptDeliveryDltTopic;
+
         // ==================== PRODUCER CONFIG ====================
         // Booking service produces:
         // - booking-confirmed (to Core)
@@ -59,7 +80,13 @@ public class BookingKafkaConfig {
                                                                 "com.forvmom.common.dto.events.BookingFailedEvent:" +
                                                                 "com.forvmom.MomentForeverBooking.events.BookingFailedEvent," +
                                                                 "com.forvmom.common.dto.events.BookingCancelledEvent:" +
-                                                                "com.forvmom.MomentForeverBooking.events.BookingCancelledEvent");
+                                                                "com.forvmom.MomentForeverBooking.events.BookingCancelledEvent," +
+                                                "com.forvmom.booking.events.ReceiptGenerationRequestedEvent:" +
+                                                                "com.forvmom.MomentForeverBooking.events.ReceiptGenerationRequestedEvent," +
+                                                "com.forvmom.booking.events.ReceiptEligibilityCapturedEvent:" +
+                                                                "com.forvmom.MomentForeverBooking.events.ReceiptEligibilityCapturedEvent," +
+                                                "com.forvmom.booking.events.ExperienceCompletedEvent:" +
+                                                                "com.forvmom.MomentForeverBooking.events.ExperienceCompletedEvent");
 
                 // Reliability settings
                 config.put(ProducerConfig.RETRIES_CONFIG, 3);
@@ -121,6 +148,10 @@ public class BookingKafkaConfig {
                                                 "com.forvmom.MomentForeverBooking.events.PaymentProcessedEvent," +
                                                 "com.forvmom.payment.events.PaymentFailedEvent:" +
                                                 "com.forvmom.MomentForeverBooking.events.PaymentFailedEvent," +
+                                                "com.forvmom.MomentForeverPayment.events.PaymentProcessedEvent:" +
+                                                "com.forvmom.MomentForeverBooking.events.PaymentProcessedEvent," +
+                                                "com.forvmom.MomentForeverPayment.events.PaymentFailedEvent:" +
+                                                "com.forvmom.MomentForeverBooking.events.PaymentFailedEvent," +
                                                 // Booking service's own booking-confirmed event, re-consumed by the
                                                 // notification listener (BookingNotificationConsumer). The producer
                                                 // side tags this topic with the __TypeId__ below (see producerFactory).
@@ -129,7 +160,10 @@ public class BookingKafkaConfig {
                                                 // Same self-consumption for booking-cancelled
                                                 // (BookingCancelledNotificationConsumer).
                                                 "com.forvmom.common.dto.events.BookingCancelledEvent:" +
-                                                "com.forvmom.MomentForeverBooking.events.BookingCancelledEvent");
+                                                "com.forvmom.MomentForeverBooking.events.BookingCancelledEvent," +
+                                                // Billing service -> receipt attachment delivery listener.
+                                                "com.forvmom.billing.events.ReceiptDeliveryRequestedEvent:" +
+                                                "com.forvmom.MomentForeverBooking.events.ReceiptDeliveryRequestedEvent");
 
                 // Use the __TypeId__ header for type resolution (default true, but
                 // being explicit to document intent)
@@ -215,6 +249,62 @@ public class BookingKafkaConfig {
         @Bean
         public NewTopic paymentRequestedTopic() {
                 return TopicBuilder.name("payment-requested")
+                                .partitions(1)
+                                .replicas(1)
+                                .build();
+        }
+
+        @Bean
+        public NewTopic receiptGenerationRequestedTopic() {
+                return TopicBuilder.name(receiptGenerationRequestedTopic)
+                                .partitions(1)
+                                .replicas(1)
+                                .build();
+        }
+
+        @Bean
+        public NewTopic receiptEligibilityCapturedTopic() {
+                return TopicBuilder.name(receiptEligibilityCapturedTopic)
+                                .partitions(1)
+                                .replicas(1)
+                                .build();
+        }
+
+        @Bean
+        public NewTopic experienceCompletedTopic() {
+                return TopicBuilder.name(experienceCompletedTopic)
+                                .partitions(1)
+                                .replicas(1)
+                                .build();
+        }
+
+        @Bean
+        public NewTopic receiptDeliveryRequestedTopic() {
+                return TopicBuilder.name(receiptDeliveryRequestedTopic)
+                                .partitions(1)
+                                .replicas(1)
+                                .build();
+        }
+
+        @Bean
+        public NewTopic bookingConfirmedDltTopic() {
+                return TopicBuilder.name(bookingConfirmedDltTopic)
+                                .partitions(1)
+                                .replicas(1)
+                                .build();
+        }
+
+        @Bean
+        public NewTopic bookingCancelledDltTopic() {
+                return TopicBuilder.name(bookingCancelledDltTopic)
+                                .partitions(1)
+                                .replicas(1)
+                                .build();
+        }
+
+        @Bean
+        public NewTopic receiptDeliveryDltTopic() {
+                return TopicBuilder.name(receiptDeliveryDltTopic)
                                 .partitions(1)
                                 .replicas(1)
                                 .build();

@@ -131,6 +131,9 @@ public class Booking {
     @Column(name = "confirmed_at")
     private LocalDateTime confirmedAt;
 
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+
     @Column(name = "cancelled_at")
     private LocalDateTime cancelledAt;
 
@@ -382,6 +385,14 @@ public class Booking {
 
     public void setConfirmedAt(LocalDateTime confirmedAt) {
         this.confirmedAt = confirmedAt;
+    }
+
+    public LocalDateTime getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(LocalDateTime completedAt) {
+        this.completedAt = completedAt;
     }
 
     public LocalDateTime getCancelledAt() {

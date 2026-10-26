@@ -58,6 +58,7 @@ public class BookingResponse {
     private String cancelReason;
     private LocalDateTime requestedAt;
     private LocalDateTime confirmedAt;
+    private LocalDateTime completedAt;
     private LocalDateTime cancelledAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -288,6 +289,14 @@ public class BookingResponse {
 
     public void setConfirmedAt(LocalDateTime confirmedAt) {
         this.confirmedAt = confirmedAt;
+    }
+
+    public LocalDateTime getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(LocalDateTime completedAt) {
+        this.completedAt = completedAt;
     }
 
     public LocalDateTime getCancelledAt() {

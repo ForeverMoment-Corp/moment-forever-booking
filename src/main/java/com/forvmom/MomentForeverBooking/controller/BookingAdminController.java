@@ -6,6 +6,7 @@ import com.forvmom.MomentForeverBooking.domain.entity.OutgoingOutboxRecord;
 import com.forvmom.MomentForeverBooking.dto.response.BookingMetricsResponse;
 import com.forvmom.MomentForeverBooking.dto.response.BookingResponse;
 import com.forvmom.MomentForeverBooking.dto.response.BookingTimelineEntry;
+import com.forvmom.MomentForeverBooking.exception.BookingAccessDeniedException;
 import com.forvmom.MomentForeverBooking.service.BookingService;
 import com.forvmom.MomentForeverBooking.service.retries_cleanup.OutgoingOutboxPublisher;
 import io.swagger.v3.oas.annotations.Operation;
@@ -137,6 +138,21 @@ public class BookingAdminController {
                 "message", "Booking has been cancelled successfully."));
     }
 
+    @PutMapping("/{bookingId}/complete")
+    @Operation(summary = "Mark Experience Completed", description = "Marks a confirmed booking as completed and "
+            + "durably publishes an EXPERIENCE_COMPLETED event. Requires an ADMIN or SUPER_ADMIN role.")
+    public ResponseEntity<?> completeBooking(
+            @PathVariable String bookingId,
+            @RequestHeader("X-User-Roles") String roles) {
+        requireOperationsRole(roles);
+        OutgoingOutboxRecord staged = bookingService.completeBooking(bookingId);
+        outgoingOutboxPublisher.trySinglePublish(staged);
+        return ResponseEntity.ok(Map.of(
+                "bookingId", bookingId,
+                "status", "COMPLETED",
+                "message", "Experience completion has been recorded."));
+    }
+
 
     // ─── Query-param validation helpers ─────────────────────────────────
 
@@ -153,5 +169,17 @@ public class BookingAdminController {
     private void validateRange(LocalDateTime from, LocalDateTime to) {
         BookingQuerySupport.validateRange(from, to);
     }
-}
 
+    private void requireOperationsRole(String roles) {
+        if (roles == null) {
+            throw new BookingAccessDeniedException("An operations role is required");
+        }
+        for (String role : roles.split(",")) {
+            String normalized = role.trim();
+            if ("ADMIN".equalsIgnoreCase(normalized) || "SUPER_ADMIN".equalsIgnoreCase(normalized)) {
+                return;
+            }
+        }
+        throw new BookingAccessDeniedException("An operations role is required");
+    }
+}

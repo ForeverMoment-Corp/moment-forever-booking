@@ -24,12 +24,15 @@ public class BookingCancelledEvent extends BaseEvent implements OutboundEvent {
     private String bookingId;
     private Long userId;
     private String userEmail;
+    private String userFullName;
     private Long experienceId;
+    private String experienceName;
     private Long timeSlotMapperId;
     private Integer guestCount;
     private LocalDate bookingDate;
     private String cancelReason;
     private LocalDateTime cancelledAt;
+    private LocalDateTime confirmedAt;
 
     public BookingCancelledEvent() {
     }
@@ -54,12 +57,28 @@ public class BookingCancelledEvent extends BaseEvent implements OutboundEvent {
         return userEmail;
     }
 
+    public String getUserFullName() {
+        return userFullName;
+    }
+
+    public void setUserFullName(String userFullName) {
+        this.userFullName = userFullName;
+    }
+
     public void setUserEmail(String userEmail) {
         this.userEmail = userEmail;
     }
 
     public Long getExperienceId() {
         return experienceId;
+    }
+
+    public String getExperienceName() {
+        return experienceName;
+    }
+
+    public void setExperienceName(String experienceName) {
+        this.experienceName = experienceName;
     }
 
     public void setExperienceId(Long experienceId) {
@@ -100,6 +119,14 @@ public class BookingCancelledEvent extends BaseEvent implements OutboundEvent {
 
     public LocalDateTime getCancelledAt() {
         return cancelledAt;
+    }
+
+    public LocalDateTime getConfirmedAt() {
+        return confirmedAt;
+    }
+
+    public void setConfirmedAt(LocalDateTime confirmedAt) {
+        this.confirmedAt = confirmedAt;
     }
 
     public void setCancelledAt(LocalDateTime cancelledAt) {

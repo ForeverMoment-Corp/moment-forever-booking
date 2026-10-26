@@ -1,11 +1,13 @@
 package com.forvmom.MomentForeverBooking.service.inbound;
 
 import com.forvmom.MomentForeverBooking.domain.entity.InboundOutbox;
-import com.forvmom.MomentForeverBooking.domain.entity.OutgoingOutboxRecord;
 import com.forvmom.MomentForeverBooking.events.InboundEvent;
 import com.forvmom.MomentForeverBooking.service.InboundOutboxService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Coordinates atomic inbound processing. Kafka publication is outside this
@@ -31,14 +33,32 @@ public class InboundEventProcessingTransactionService {
      * all-or-nothing within this transaction.
      */
     @Transactional
-    public OutgoingOutboxRecord processInboundEventAtomically(
+    public OutboundProcessingResult processInboundEventAtomically(
             InboundOutbox inboundOutbox,
             InboundEvent inboundEvent) {
         InboundBookingEventProcessor inboundEventProcessor =
                 inboundEventProcessorRegistry.getProcessor(inboundEvent.getEventType());
-        OutgoingOutboxRecord outgoingOutboxRecord = inboundEventProcessor.process(inboundEvent);
+        OutboundProcessingResult result = inboundEventProcessor.process(inboundEvent);
         inboundOutboxService.markAsProcessed(inboundOutbox);
-        return outgoingOutboxRecord;
+        return result;
+    }
+
+    @Transactional
+    public OutboundProcessingResult reconcileInboundEventAtomically(
+            InboundOutbox inboundOutbox,
+            InboundEvent inboundEvent,
+            Set<String> missingEventTypes) {
+        InboundBookingEventProcessor inboundEventProcessor =
+                inboundEventProcessorRegistry.getProcessor(inboundEvent.getEventType());
+        OutboundProcessingResult result = inboundEventProcessor.reconcile(inboundEvent, missingEventTypes);
+        Set<String> createdEventTypes = result.records().stream()
+                .map(record -> record.getEventType())
+                .collect(Collectors.toSet());
+        if (!createdEventTypes.containsAll(missingEventTypes)) {
+            throw new IllegalStateException("Inbound retry did not restore every required outgoing record");
+        }
+        inboundOutboxService.markAsProcessed(inboundOutbox);
+        return result;
     }
 
     @Transactional

@@ -189,6 +189,18 @@ app:
   mail:
     # PLACEHOLDER: sender address shown to customers; needs a real, deliverable domain
     from: ${MAIL_FROM_ADDRESS:thegreatburp@gmail.com}
+  notifications:
+    email:
+      enabled: ${BOOKING_EMAIL_NOTIFICATIONS_ENABLED:true}
+    whatsapp:
+      enabled: ${BOOKING_WHATSAPP_NOTIFICATIONS_ENABLED:false}
+      endpoint: ${WHATSAPP_API_ENDPOINT:}
+      authorization-token: ${WHATSAPP_API_TOKEN:}
+
+billing:
+  internal:
+    base-url: ${BILLING_INTERNAL_BASE_URL:http://localhost:8084/billing}
+    token: ${BILLING_INTERNAL_TOKEN:}
 
 slug:
   separator: "-"
@@ -260,3 +272,10 @@ kafka:
     payment-requested: topic_payment_requested
     payment-confirmed: topic_payment_confirmed
     payment-failed: topic_payment_failed
+    receipt-generation-requested: topic_receipt_generation_requested
+    receipt-eligibility-captured: topic_receipt_eligibility_captured
+    experience-completed: topic_experience_completed
+    receipt-delivery-requested: topic_receipt_delivery_requested
+    booking-confirmed-dlt: topic_booking_confirmed.DLT
+    booking-cancelled-dlt: topic_booking_cancelled.DLT
+    receipt-delivery-dlt: topic_receipt_delivery_requested.DLT

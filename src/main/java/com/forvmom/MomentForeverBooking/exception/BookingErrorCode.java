@@ -20,6 +20,7 @@ public enum BookingErrorCode {
 
     // ---- Auth ----
     UNAUTHORIZED,
+    FORBIDDEN,
 
     // ---- Kafka / Event Processing ----
     KAFKA_EVENT_PROCESSING_FAILED,

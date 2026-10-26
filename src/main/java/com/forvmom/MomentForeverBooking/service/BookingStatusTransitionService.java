@@ -29,14 +29,21 @@ public class BookingStatusTransitionService {
         LocalDateTime transitionTime = LocalDateTime.now();
         int updatedBookings = bookingRepository.transitionPendingBookingToConfirmed(
                 bookingId, transitionTime, transitionTime);
-        return loadTransitionResult(bookingId, BookingStatus.CONFIRMED, updatedBookings);
+        return loadTransitionResult(bookingId, BookingStatus.PENDING.name(), BookingStatus.CONFIRMED, updatedBookings);
+    }
+
+    public Optional<Booking> transitionConfirmedBookingToCompleted(String bookingId) {
+        LocalDateTime transitionTime = LocalDateTime.now();
+        int updatedBookings = bookingRepository.transitionConfirmedBookingToCompleted(
+                bookingId, transitionTime, transitionTime);
+        return loadTransitionResult(bookingId, BookingStatus.CONFIRMED.name(), BookingStatus.COMPLETED, updatedBookings);
     }
 
     public Optional<Booking> transitionPendingBookingToFailed(String bookingId, String failureReason) {
         LocalDateTime transitionTime = LocalDateTime.now();
         int updatedBookings = bookingRepository.transitionPendingBookingToFailed(
                 bookingId, failureReason, transitionTime);
-        return loadTransitionResult(bookingId, BookingStatus.FAILED, updatedBookings);
+        return loadTransitionResult(bookingId, BookingStatus.PENDING.name(), BookingStatus.FAILED, updatedBookings);
     }
 
     public Optional<Booking> transitionActiveBookingToCancelled(String bookingId, String cancelReason) {
@@ -44,11 +51,16 @@ public class BookingStatusTransitionService {
         int updatedBookings = bookingRepository.transitionActiveBookingToCancelled(
                 bookingId, cancelReason, transitionTime, transitionTime,
                 List.of(BookingStatus.PENDING, BookingStatus.CONFIRMED));
-        return loadTransitionResult(bookingId, BookingStatus.CANCELLED, updatedBookings);
+        return loadTransitionResult(
+                bookingId,
+                BookingStatus.PENDING.name() + "/" + BookingStatus.CONFIRMED.name(),
+                BookingStatus.CANCELLED,
+                updatedBookings);
     }
 
     private Optional<Booking> loadTransitionResult(
             String bookingId,
+            String previousStatus,
             BookingStatus requestedStatus,
             int updatedBookings) {
         Booking booking = bookingRepository.findByBookingId(bookingId)
@@ -57,14 +69,14 @@ public class BookingStatusTransitionService {
 
         if (updatedBookings == 1) {
             log.info(
-                    "Booking status transition won: bookingId={}, requestedTransition=PENDING->{}, currentStatus={}",
-                    bookingId, requestedStatus, booking.getStatus());
+                    "Booking status transition won: bookingId={}, requestedTransition={}->{}, currentStatus={}",
+                    bookingId, previousStatus, requestedStatus, booking.getStatus());
             return Optional.of(booking);
         }
 
         log.warn(
-                "Booking status transition skipped: bookingId={}, requestedTransition=PENDING->{}, currentStatus={}",
-                bookingId, requestedStatus, booking.getStatus());
+                "Booking status transition skipped: bookingId={}, requestedTransition={}->{}, currentStatus={}",
+                bookingId, previousStatus, requestedStatus, booking.getStatus());
         return Optional.empty();
     }
 }

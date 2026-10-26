@@ -3,7 +3,6 @@ package com.forvmom.MomentForeverBooking.service.inbound;
 import com.forvmom.MomentForeverBooking.commons.EventConstants;
 import com.forvmom.MomentForeverBooking.commons.OutboundEventGenerator;
 import com.forvmom.MomentForeverBooking.domain.entity.Booking;
-import com.forvmom.MomentForeverBooking.domain.entity.OutgoingOutboxRecord;
 import com.forvmom.MomentForeverBooking.events.*;
 import com.forvmom.MomentForeverBooking.mapper.BookingMapper;
 import com.forvmom.MomentForeverBooking.repository.BookingRepository;
@@ -32,10 +31,10 @@ public class BookingRequestProcessor implements InboundBookingEventProcessor {
      */
 
     @Override
-    public OutgoingOutboxRecord process(InboundEvent event) {
+    public OutboundProcessingResult process(InboundEvent event) {
         if (bookingRepository.existsByBookingId(event.getBookingId())) {
             log.warn("Duplicate booking request ignored. bookingId={}", event.getBookingId());
-            return null;
+            return OutboundProcessingResult.none();
         }
 
         BookingRequestEvent bookingRequestEvent = (BookingRequestEvent) event;
@@ -44,11 +43,11 @@ public class BookingRequestProcessor implements InboundBookingEventProcessor {
         log.info("Persisted PENDING booking: bookingId={}", booking.getBookingId());
 
         OutboundEvent paymentEvent = OutboundEventGenerator.buildOutboundEvent(booking,EventConstants.PAYMENT_REQUESTED,event);
-        OutgoingOutboxRecord record = outgoingOutboxService.createRecord(
+        var record = outgoingOutboxService.createRecord(
                 booking.getBookingId(), EventConstants.PAYMENT_REQUESTED, paymentEvent);
         log.debug("Created outgoing outbox record id={} for PAYMENT_REQUESTED bookingId={}",
                 record.getId(), booking.getBookingId());
-        return record;
+        return OutboundProcessingResult.of(record);
     }
 
 

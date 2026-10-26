@@ -27,6 +27,18 @@ public class OutboundEventGenerator {
                 return buildBookingCancelledEvent(booking);
             }
 
+            if (eventType.equals(EventConstants.RECEIPT_GENERATION_REQUESTED)) {
+                return buildReceiptGenerationRequestedEvent(booking, inboundEvent);
+            }
+
+            if (eventType.equals(EventConstants.RECEIPT_ELIGIBILITY_CAPTURED)) {
+                return buildReceiptEligibilityCapturedEvent(booking, inboundEvent);
+            }
+
+            if (eventType.equals(EventConstants.EXPERIENCE_COMPLETED)) {
+                return buildExperienceCompletedEvent(booking);
+            }
+
             if (eventType.equals(EventConstants.PAYMENT_REQUESTED)) {
                 return buildPaymentRequestedEvent(booking, inboundEvent);
             }
@@ -41,9 +53,12 @@ public class OutboundEventGenerator {
         e.setConfirmedAt(LocalDateTime.now());
         e.setUserId(booking.getUserId());
         e.setUserEmail(booking.getUserEmail());
+        e.setUserFullName(booking.getUserFullName());
         e.setExperienceId(booking.getExperienceId());
+        e.setExperienceName(booking.getExperienceName());
         e.setTimeSlotMapperId(booking.getTimeSlotMapperId());
         e.setGuestCount(booking.getGuestCount());
+        e.setBookingDate(booking.getBookingDate());
         return e;
     }
 
@@ -61,6 +76,76 @@ public class OutboundEventGenerator {
         e.setGuestCount(booking.getGuestCount());
         e.setCurrency("INR");
         return e;
+    }
+
+    private static ReceiptEligibilityCapturedEvent buildReceiptEligibilityCapturedEvent(
+            Booking booking,
+            InboundEvent inboundEvent) {
+        if (!(inboundEvent instanceof PaymentProcessedEvent paymentEvent)) {
+            throw new IllegalArgumentException("Receipt eligibility requires payment evidence");
+        }
+
+        ReceiptEligibilityCapturedEvent event = new ReceiptEligibilityCapturedEvent();
+        applyIdentity(event, EventConstants.RECEIPT_ELIGIBILITY_CAPTURED, booking.getBookingId(), inboundEvent);
+        event.setBookingId(booking.getBookingId());
+        event.setUserId(booking.getUserId());
+        event.setUserEmail(booking.getUserEmail());
+        event.setUserFullName(booking.getUserFullName());
+        event.setExperienceName(booking.getExperienceName());
+        if (booking.getBookingDate() != null) {
+            event.setBookingDate(booking.getBookingDate().toInstant(java.time.ZoneOffset.UTC));
+        }
+        event.setExpectedAmount(booking.getGrandTotal());
+        event.setExpectedCurrency("INR");
+        event.setPaymentTransactionId(paymentEvent.getTransactionId());
+        event.setAmountPaid(paymentEvent.getAmountPaid());
+        event.setCurrencyPaid(paymentEvent.getCurrency());
+        if (paymentEvent.getPaidAt() != null) {
+            event.setPaidAt(paymentEvent.getPaidAt().toInstant(java.time.ZoneOffset.UTC));
+        }
+        return event;
+    }
+
+    private static ExperienceCompletedEvent buildExperienceCompletedEvent(Booking booking) {
+        ExperienceCompletedEvent event = new ExperienceCompletedEvent();
+        applyIdentity(event, EventConstants.EXPERIENCE_COMPLETED, booking.getBookingId(),
+                booking.getBookingId(), null);
+        event.setBookingId(booking.getBookingId());
+        event.setUserId(booking.getUserId());
+        event.setExperienceId(booking.getExperienceId());
+        if (booking.getCompletedAt() == null) {
+            throw new IllegalStateException("Completed booking must have a completion time");
+        }
+        event.setCompletedAt(booking.getCompletedAt().toInstant(java.time.ZoneOffset.UTC));
+        return event;
+    }
+
+    private static ReceiptGenerationRequestedEvent buildReceiptGenerationRequestedEvent(
+            Booking booking,
+            InboundEvent inboundEvent) {
+        if (!(inboundEvent instanceof PaymentProcessedEvent paymentEvent)) {
+            throw new IllegalArgumentException("Receipt generation requires payment evidence");
+        }
+
+        ReceiptGenerationRequestedEvent event = new ReceiptGenerationRequestedEvent();
+        applyIdentity(event, EventConstants.RECEIPT_GENERATION_REQUESTED, booking.getBookingId(), inboundEvent);
+        event.setBookingId(booking.getBookingId());
+        event.setUserId(booking.getUserId());
+        event.setUserEmail(booking.getUserEmail());
+        event.setUserFullName(booking.getUserFullName());
+        event.setExperienceName(booking.getExperienceName());
+        if (booking.getBookingDate() != null) {
+            event.setBookingDate(booking.getBookingDate().toInstant(java.time.ZoneOffset.UTC));
+        }
+        event.setExpectedAmount(booking.getGrandTotal());
+        event.setExpectedCurrency("INR");
+        event.setPaymentTransactionId(paymentEvent.getTransactionId());
+        event.setAmountPaid(paymentEvent.getAmountPaid());
+        event.setCurrencyPaid(paymentEvent.getCurrency());
+        if (paymentEvent.getPaidAt() != null) {
+            event.setPaidAt(paymentEvent.getPaidAt().toInstant(java.time.ZoneOffset.UTC));
+        }
+        return event;
     }
 
     private static BookingFailedEvent buildBookingFailedEvent(Booking booking, InboundEvent inboundEvent) {
@@ -111,7 +196,9 @@ public class OutboundEventGenerator {
         event.setBookingId(booking.getBookingId());
         event.setUserId(booking.getUserId());
         event.setUserEmail(booking.getUserEmail());
+        event.setUserFullName(booking.getUserFullName());
         event.setExperienceId(booking.getExperienceId());
+        event.setExperienceName(booking.getExperienceName());
         event.setTimeSlotMapperId(booking.getTimeSlotMapperId());
         event.setGuestCount(booking.getGuestCount());
         if (booking.getBookingDate() != null) {
@@ -120,6 +207,7 @@ public class OutboundEventGenerator {
         event.setCancelReason(booking.getCancelReason());
         event.setCancelledAt(booking.getCancelledAt() != null
                 ? booking.getCancelledAt() : LocalDateTime.now());
+        event.setConfirmedAt(booking.getConfirmedAt());
         return event;
     }
 

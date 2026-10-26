@@ -8,6 +8,7 @@ import com.forvmom.MomentForeverBooking.service.InboundOutboxService;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.inOrder;
@@ -19,7 +20,7 @@ import static org.mockito.Mockito.when;
 class InboundEventProcessingTransactionServiceTest {
 
     @Test
-    void processingSuccessReturnsOutgoingRecordThenMarksExactInboundRecordProcessed() {
+    void processingSuccessReturnsOutgoingRecordsThenMarksExactInboundRecordProcessed() {
         InboundEventProcessorRegistry processorRegistry = mock(InboundEventProcessorRegistry.class);
         InboundOutboxService inboundOutboxService = mock(InboundOutboxService.class);
         InboundBookingEventProcessor processor = mock(InboundBookingEventProcessor.class);
@@ -29,12 +30,12 @@ class InboundEventProcessingTransactionServiceTest {
         PaymentProcessedEvent inboundEvent = paymentProcessedEvent();
         OutgoingOutboxRecord outgoingOutboxRecord = new OutgoingOutboxRecord();
         when(processorRegistry.getProcessor(EventConstants.PAYMENT_PROCESSED)).thenReturn(processor);
-        when(processor.process(inboundEvent)).thenReturn(outgoingOutboxRecord);
+        when(processor.process(inboundEvent)).thenReturn(OutboundProcessingResult.of(outgoingOutboxRecord));
 
-        OutgoingOutboxRecord result =
+        OutboundProcessingResult result =
                 transactionService.processInboundEventAtomically(inboundOutbox, inboundEvent);
 
-        assertSame(outgoingOutboxRecord, result);
+        assertEquals(java.util.List.of(outgoingOutboxRecord), result.records());
         InOrder processingOrder = inOrder(processor, inboundOutboxService);
         processingOrder.verify(processor).process(inboundEvent);
         processingOrder.verify(inboundOutboxService).markAsProcessed(inboundOutbox);

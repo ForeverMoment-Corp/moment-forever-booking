@@ -25,6 +25,7 @@ public class BookingMetricsResponse {
     private long total;
     private long pending;
     private long confirmed;
+    private long completed;
     private long failed;
     private long cancelled;
 
@@ -86,6 +87,14 @@ public class BookingMetricsResponse {
         this.confirmed = confirmed;
     }
 
+    public long getCompleted() {
+        return completed;
+    }
+
+    public void setCompleted(long completed) {
+        this.completed = completed;
+    }
+
 
     public long getFailed() {
         return failed;
@@ -126,6 +135,5 @@ public class BookingMetricsResponse {
         this.averageConfirmedBookingValue = averageConfirmedBookingValue;
     }
 }
-
 
 

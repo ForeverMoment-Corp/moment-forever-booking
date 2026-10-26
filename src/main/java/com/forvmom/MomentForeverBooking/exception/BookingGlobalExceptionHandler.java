@@ -86,6 +86,19 @@ public class BookingGlobalExceptionHandler {
                                 request.getRequestURI());
         }
 
+        @ExceptionHandler(BookingAccessDeniedException.class)
+        public ResponseEntity<ApiErrorResponse> handleBookingAccessDenied(
+                        BookingAccessDeniedException ex,
+                        HttpServletRequest request) {
+
+                log.warn("Booking access denied — path={}", request.getRequestURI());
+                return buildResponse(
+                                HttpStatus.FORBIDDEN,
+                                BookingErrorCode.FORBIDDEN,
+                                ex.getMessage(),
+                                request.getRequestURI());
+        }
+
         /**
          * Semantically invalid booking request → 400 BAD REQUEST
          */
